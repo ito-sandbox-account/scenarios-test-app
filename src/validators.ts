@@ -5,9 +5,12 @@ export const loginInputSchema = z.object({
   password: z.string().min(1),
 });
 
+export const prioritySchema = z.enum(["low", "medium", "high"]);
+
 export const createTodoInputSchema = z.object({
   title: z.string().min(1).max(280),
   dueDate: z.string().datetime().optional(),
+  priority: prioritySchema.optional(),
 });
 
 export const patchTodoInputSchema = z
@@ -15,9 +18,14 @@ export const patchTodoInputSchema = z
     title: z.string().min(1).max(280).optional(),
     completed: z.boolean().optional(),
     dueDate: z.string().datetime().nullable().optional(),
+    priority: prioritySchema.optional(),
   })
   .refine(
-    (v) => v.title !== undefined || v.completed !== undefined || v.dueDate !== undefined,
+    (v) =>
+      v.title !== undefined ||
+      v.completed !== undefined ||
+      v.dueDate !== undefined ||
+      v.priority !== undefined,
     { message: "at least one field must be provided" },
   );
 
