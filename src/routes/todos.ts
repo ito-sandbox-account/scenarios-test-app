@@ -95,6 +95,18 @@ todosRoutes.patch("/:id", async (c) => {
   return c.json({ todo: rowToTodo(result) });
 });
 
+todosRoutes.get("/stats", (c) => {
+  const user = currentUser(c);
+  const total = (db
+    .query("SELECT COUNT(*) as c FROM todos WHERE user_id = ?")
+    .get(user.id) as { c: number } | null)?.c ?? 0;
+  const completed = (db
+    .query("SELECT COUNT(*) as c FROM todos WHERE user_id = ? AND completed = 1")
+    .get(user.id) as { c: number } | null)?.c ?? 0;
+  const completionRate = total === 0 ? 0 : Math.round((completed / total) * 100) / 100;
+  return c.json({ total, completed, completionRate });
+});
+
 todosRoutes.delete("/:id", (c) => {
   const user = currentUser(c);
   const id = Number(c.req.param("id"));
@@ -106,21 +118,3 @@ todosRoutes.delete("/:id", (c) => {
   return c.json({ ok: true });
 });
 
-// Legacy convenience endpoint — flips `completed` without requiring a PATCH payload.
-// Kept for backward compatibility with older clients.
-todosRoutes.post("/:id/toggle", (c) => {
-  const user = currentUser(c);
-  const id = Number(c.req.param("id"));
-  if (!Number.isInteger(id)) return c.json({ error: "invalid id" }, 400);
-  const existing = db
-    .query("SELECT * FROM todos WHERE id = ? AND user_id = ?")
-    .get(id, user.id) as Record<string, unknown> | null;
-  if (!existing) return c.json({ error: "not found" }, 404);
-  const nextCompleted = (existing.completed as number) ? 0 : 1;
-  const result = db
-    .query(
-      "UPDATE todos SET completed = ? WHERE id = ? AND user_id = ? RETURNING *",
-    )
-    .get(nextCompleted, id, user.id) as Record<string, unknown>;
-  return c.json({ todo: rowToTodo(result) });
-});

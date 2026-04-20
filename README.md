@@ -23,7 +23,7 @@ A synthetic Hono + SQLite todo API used as a sandbox for [qaito](https://github.
 - `GET /api/todos/:id` — fetch one
 - `PATCH /api/todos/:id` — update any of `title`, `completed`, `dueDate`
 - `DELETE /api/todos/:id` — delete
-- `POST /api/todos/:id/toggle` — flip `completed` (legacy convenience endpoint)
+- `POST /api/todos/:id/toggle` — **removed** (use `PATCH /api/todos/:id` with `{ "completed": true|false }` instead)
 
 ## Development
 
