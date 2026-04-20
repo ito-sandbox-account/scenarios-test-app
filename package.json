@@ -1,0 +1,20 @@
+{
+  "name": "scenarios-test-app",
+  "version": "0.1.0",
+  "description": "Synthetic todo API used as a sandbox for test-plan-agent scenario benchmarks. Not production.",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "start": "bun run src/index.ts",
+    "typecheck": "bun run tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.6.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.0",
+    "typescript": "^5.5.0"
+  }
+}
