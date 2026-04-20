@@ -2,7 +2,8 @@ import { Hono } from "hono";
 import { db } from "../db";
 import { currentUser, requireAuth } from "../auth";
 import { createTodoInputSchema, patchTodoInputSchema } from "../validators";
-import type { Todo } from "../types";
+import { isOverdue } from "../overdue";
+import type { Todo, TodoResponse } from "../types";
 
 export const todosRoutes = new Hono();
 todosRoutes.use("*", requireAuth);
@@ -18,6 +19,10 @@ function rowToTodo(row: Record<string, unknown>): Todo {
   };
 }
 
+function toResponse(todo: Todo): TodoResponse {
+  return { ...todo, isOverdue: isOverdue(todo) };
+}
+
 todosRoutes.post("/", async (c) => {
   const user = currentUser(c);
   const body = await c.req.json().catch(() => null);
@@ -31,7 +36,7 @@ todosRoutes.post("/", async (c) => {
       "INSERT INTO todos (user_id, title, due_date) VALUES (?, ?, ?) RETURNING *",
     )
     .get(user.id, title, dueDate ?? null) as Record<string, unknown>;
-  return c.json({ todo: rowToTodo(result) }, 201);
+  return c.json({ todo: toResponse(rowToTodo(result)) }, 201);
 });
 
 todosRoutes.get("/", (c) => {
@@ -47,7 +52,7 @@ todosRoutes.get("/", (c) => {
       .query("SELECT * FROM todos WHERE user_id = ? ORDER BY id DESC")
       .all(user.id) as Record<string, unknown>[];
   }
-  return c.json({ todos: rows.map(rowToTodo) });
+  return c.json({ todos: rows.map(rowToTodo).map(toResponse) });
 });
 
 todosRoutes.get("/:id", (c) => {
@@ -58,7 +63,7 @@ todosRoutes.get("/:id", (c) => {
     .query("SELECT * FROM todos WHERE id = ? AND user_id = ?")
     .get(id, user.id) as Record<string, unknown> | null;
   if (!row) return c.json({ error: "not found" }, 404);
-  return c.json({ todo: rowToTodo(row) });
+  return c.json({ todo: toResponse(rowToTodo(row)) });
 });
 
 todosRoutes.patch("/:id", async (c) => {
@@ -92,7 +97,7 @@ todosRoutes.patch("/:id", async (c) => {
       "UPDATE todos SET title = ?, completed = ?, due_date = ? WHERE id = ? AND user_id = ? RETURNING *",
     )
     .get(nextTitle, nextCompleted, nextDueDate, id, user.id) as Record<string, unknown>;
-  return c.json({ todo: rowToTodo(result) });
+  return c.json({ todo: toResponse(rowToTodo(result)) });
 });
 
 todosRoutes.delete("/:id", (c) => {
@@ -122,5 +127,5 @@ todosRoutes.post("/:id/toggle", (c) => {
       "UPDATE todos SET completed = ? WHERE id = ? AND user_id = ? RETURNING *",
     )
     .get(nextCompleted, id, user.id) as Record<string, unknown>;
-  return c.json({ todo: rowToTodo(result) });
+  return c.json({ todo: toResponse(rowToTodo(result)) });
 });
