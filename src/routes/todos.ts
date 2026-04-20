@@ -95,6 +95,18 @@ todosRoutes.patch("/:id", async (c) => {
   return c.json({ todo: rowToTodo(result) });
 });
 
+todosRoutes.get("/stats", (c) => {
+  const user = currentUser(c);
+  const total = (db
+    .query("SELECT COUNT(*) as c FROM todos WHERE user_id = ?")
+    .get(user.id) as { c: number } | null)?.c ?? 0;
+  const completed = (db
+    .query("SELECT COUNT(*) as c FROM todos WHERE user_id = ? AND completed = 1")
+    .get(user.id) as { c: number } | null)?.c ?? 0;
+  const completionRate = total === 0 ? 0 : Math.round((completed / total) * 100) / 100;
+  return c.json({ total, completed, completionRate });
+});
+
 todosRoutes.delete("/:id", (c) => {
   const user = currentUser(c);
   const id = Number(c.req.param("id"));
