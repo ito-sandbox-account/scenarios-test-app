@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { db } from "../db";
 import { currentUser, requireAuth } from "../auth";
 import { createTodoInputSchema, patchTodoInputSchema } from "../validators";
-import type { Todo } from "../types";
+import type { Priority, Todo } from "../types";
 
 export const todosRoutes = new Hono();
 todosRoutes.use("*", requireAuth);
@@ -14,6 +14,7 @@ function rowToTodo(row: Record<string, unknown>): Todo {
     title: row.title as string,
     completed: Boolean(row.completed),
     dueDate: (row.due_date as string | null) ?? null,
+    priority: (row.priority as Priority) ?? "medium",
     createdAt: row.created_at as string,
   };
 }
@@ -25,12 +26,12 @@ todosRoutes.post("/", async (c) => {
   if (!parsed.success) {
     return c.json({ error: "invalid payload", details: parsed.error.issues }, 400);
   }
-  const { title, dueDate } = parsed.data;
+  const { title, dueDate, priority } = parsed.data;
   const result = db
     .query(
-      "INSERT INTO todos (user_id, title, due_date) VALUES (?, ?, ?) RETURNING *",
+      "INSERT INTO todos (user_id, title, due_date, priority) VALUES (?, ?, ?, ?) RETURNING *",
     )
-    .get(user.id, title, dueDate ?? null) as Record<string, unknown>;
+    .get(user.id, title, dueDate ?? null, priority ?? "medium") as Record<string, unknown>;
   return c.json({ todo: rowToTodo(result) }, 201);
 });
 
@@ -86,12 +87,13 @@ todosRoutes.patch("/:id", async (c) => {
     parsed.data.dueDate === undefined
       ? (existing.due_date as string | null)
       : parsed.data.dueDate;
+  const nextPriority = parsed.data.priority ?? (existing.priority as Priority) ?? "medium";
 
   const result = db
     .query(
-      "UPDATE todos SET title = ?, completed = ?, due_date = ? WHERE id = ? AND user_id = ? RETURNING *",
+      "UPDATE todos SET title = ?, completed = ?, due_date = ?, priority = ? WHERE id = ? AND user_id = ? RETURNING *",
     )
-    .get(nextTitle, nextCompleted, nextDueDate, id, user.id) as Record<string, unknown>;
+    .get(nextTitle, nextCompleted, nextDueDate, nextPriority, id, user.id) as Record<string, unknown>;
   return c.json({ todo: rowToTodo(result) });
 });
 
