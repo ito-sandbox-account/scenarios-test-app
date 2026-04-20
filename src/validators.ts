@@ -8,21 +8,21 @@ export const loginInputSchema = z.object({
 export const prioritySchema = z.enum(["low", "medium", "high"]);
 
 export const createTodoInputSchema = z.object({
-  title: z.string().min(1).max(280),
+  text: z.string().min(1).max(280),
   dueDate: z.string().datetime().optional(),
   priority: prioritySchema.optional(),
 });
 
 export const patchTodoInputSchema = z
   .object({
-    title: z.string().min(1).max(280).optional(),
+    text: z.string().min(1).max(280).optional(),
     completed: z.boolean().optional(),
     dueDate: z.string().datetime().nullable().optional(),
     priority: prioritySchema.optional(),
   })
   .refine(
     (v) =>
-      v.title !== undefined ||
+      v.text !== undefined ||
       v.completed !== undefined ||
       v.dueDate !== undefined ||
       v.priority !== undefined,
