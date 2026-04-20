@@ -18,12 +18,14 @@ A synthetic Hono + SQLite todo API used as a sandbox for [qaito](https://github.
 
 ### Todos (auth-required)
 
-- `POST /api/todos` — create, body: `{ "title", "dueDate?" }`
+- `POST /api/todos` — create, body: `{ "text", "dueDate?", "priority?" }`
 - `GET /api/todos` — list current user's todos (optional `?completed=true|false`)
 - `GET /api/todos/:id` — fetch one
-- `PATCH /api/todos/:id` — update any of `title`, `completed`, `dueDate`
+- `PATCH /api/todos/:id` — update any of `text`, `completed`, `dueDate`, `priority`
 - `DELETE /api/todos/:id` — delete
 - `POST /api/todos/:id/toggle` — flip `completed` (legacy convenience endpoint)
+
+**Note:** the `title` field was renamed to `text` — existing clients sending `{ title: ... }` will be rejected with a 400.
 
 ## Development
 
