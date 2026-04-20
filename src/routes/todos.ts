@@ -14,7 +14,6 @@ function rowToTodo(row: Record<string, unknown>): Todo {
     title: row.title as string,
     completed: Boolean(row.completed),
     dueDate: (row.due_date as string | null) ?? null,
-    archived: Boolean(row.archived),
     createdAt: row.created_at as string,
   };
 }
@@ -38,50 +37,17 @@ todosRoutes.post("/", async (c) => {
 todosRoutes.get("/", (c) => {
   const user = currentUser(c);
   const completedParam = c.req.query("completed");
-  const archivedParam = c.req.query("archived");
-  const includeArchived = archivedParam === "true";
-  const onlyArchived = archivedParam === "only";
-
-  const conditions: string[] = ["user_id = ?"];
-  const params: unknown[] = [user.id];
+  let rows: Record<string, unknown>[];
   if (completedParam === "true" || completedParam === "false") {
-    conditions.push("completed = ?");
-    params.push(completedParam === "true" ? 1 : 0);
+    rows = db
+      .query("SELECT * FROM todos WHERE user_id = ? AND completed = ? ORDER BY id DESC")
+      .all(user.id, completedParam === "true" ? 1 : 0) as Record<string, unknown>[];
+  } else {
+    rows = db
+      .query("SELECT * FROM todos WHERE user_id = ? ORDER BY id DESC")
+      .all(user.id) as Record<string, unknown>[];
   }
-  if (onlyArchived) {
-    conditions.push("archived = 1");
-  } else if (!includeArchived) {
-    conditions.push("archived = 0");
-  }
-  const sql = `SELECT * FROM todos WHERE ${conditions.join(" AND ")} ORDER BY id DESC`;
-  const rows = db.query(sql).all(...params) as Record<string, unknown>[];
   return c.json({ todos: rows.map(rowToTodo) });
-});
-
-todosRoutes.post("/:id/archive", (c) => {
-  const user = currentUser(c);
-  const id = Number(c.req.param("id"));
-  if (!Number.isInteger(id)) return c.json({ error: "invalid id" }, 400);
-  const result = db
-    .query(
-      "UPDATE todos SET archived = 1 WHERE id = ? AND user_id = ? RETURNING *",
-    )
-    .get(id, user.id) as Record<string, unknown> | null;
-  if (!result) return c.json({ error: "not found" }, 404);
-  return c.json({ todo: rowToTodo(result) });
-});
-
-todosRoutes.post("/:id/unarchive", (c) => {
-  const user = currentUser(c);
-  const id = Number(c.req.param("id"));
-  if (!Number.isInteger(id)) return c.json({ error: "invalid id" }, 400);
-  const result = db
-    .query(
-      "UPDATE todos SET archived = 0 WHERE id = ? AND user_id = ? RETURNING *",
-    )
-    .get(id, user.id) as Record<string, unknown> | null;
-  if (!result) return c.json({ error: "not found" }, 404);
-  return c.json({ todo: rowToTodo(result) });
 });
 
 todosRoutes.get("/:id", (c) => {
