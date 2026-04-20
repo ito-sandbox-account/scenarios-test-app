@@ -9,6 +9,7 @@ export interface Todo {
   title: string;
   completed: boolean;
   dueDate: string | null;
+  archived: boolean;
   createdAt: string;
 }
 
