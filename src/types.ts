@@ -12,6 +12,10 @@ export interface Todo {
   createdAt: string;
 }
 
+export interface TodoResponse extends Todo {
+  isOverdue: boolean;
+}
+
 export interface SessionInfo {
   userId: string;
   email: string;
