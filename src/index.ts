@@ -1,3 +1,4 @@
+import { notesRoutes, notesStarRoute } from "./routes/notes";
 import { Hono } from "hono";
 import "./db";
 import { authRoutes } from "./routes/auth-routes";
@@ -7,6 +8,8 @@ const app = new Hono();
 
 app.get("/", (c) => c.json({ service: "scenarios-test-app", ok: true }));
 app.route("/api/auth", authRoutes);
+app.route("/api/notes", notesStarRoute);
+app.route("/api/notes", notesRoutes);
 app.route("/api/todos", todosRoutes);
 
 const port = Number(process.env.PORT ?? 3000);
