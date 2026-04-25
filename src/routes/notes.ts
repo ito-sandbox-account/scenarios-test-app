@@ -13,9 +13,16 @@ db.run(`
     title      TEXT NOT NULL,
     body       TEXT,
     archived   INTEGER NOT NULL DEFAULT 0,
+    starred    INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )
 `);
+// Backfill starred column if running on a pre-existing notes table.
+try {
+  db.run("ALTER TABLE notes ADD COLUMN starred INTEGER NOT NULL DEFAULT 0");
+} catch {
+  // Column already exists.
+}
 
 const createNoteInputSchema = z.object({
   title: z.string().min(1).max(200),
@@ -29,6 +36,7 @@ function rowToNote(row: Record<string, unknown>) {
     title: row.title as string,
     body: (row.body as string | null) ?? null,
     archived: Boolean(row.archived),
+    starred: Boolean(row.starred),
     createdAt: row.created_at as string,
   };
 }
@@ -54,13 +62,17 @@ notesRoutes.get("/", (c) => {
   return c.json({ notes: rows.map(rowToNote) });
 });
 
-// BUG: returns all notes, not just archived ones — the WHERE clause is wrong.
-// This endpoint will be removed in commit 2 to exercise dropped_obsolete.
-notesRoutes.get("/archived", (c) => {
+// Searches user's notes by title prefix.
+notesRoutes.get("/search", (c) => {
   const user = currentUser(c);
+  const q = (c.req.query("q") ?? "").trim();
+  if (!q) return c.json({ notes: [] });
+  const escaped = q.replace(/[%_\\]/g, (m) => `\\${m}`);
   const rows = db
-    .query("SELECT * FROM notes WHERE user_id = ? ORDER BY created_at DESC")
-    .all(user.id) as Record<string, unknown>[];
+    .query(
+      "SELECT * FROM notes WHERE user_id = ? AND title LIKE ? ESCAPE '\\' ORDER BY created_at DESC",
+    )
+    .all(user.id, `${escaped}%`) as Record<string, unknown>[];
   return c.json({ notes: rows.map(rowToNote) });
 });
 
@@ -86,16 +98,32 @@ notesRoutes.delete("/:id", (c) => {
   return c.json({ ok: true });
 });
 
-// BUG: returns ok but never updates the archived column.
-// Commit 2 will fix this by actually running the UPDATE.
+// Fixed: now actually flips the archived column.
 notesRoutes.post("/:id/archive", (c) => {
   const user = currentUser(c);
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id)) return c.json({ error: "invalid id" }, 400);
-  const row = db
-    .query("SELECT id FROM notes WHERE id = ? AND user_id = ?")
+  const result = db
+    .query(
+      "UPDATE notes SET archived = 1 WHERE id = ? AND user_id = ? RETURNING *",
+    )
     .get(id, user.id) as Record<string, unknown> | null;
-  if (!row) return c.json({ error: "not found" }, 404);
-  // intentionally missing: UPDATE notes SET archived = 1 WHERE id = ? AND user_id = ?
-  return c.json({ ok: true });
+  if (!result) return c.json({ error: "not found" }, 404);
+  return c.json({ note: rowToNote(result) });
+});
+
+// BUG: this route is intentionally registered without `requireAuth` middleware
+// in src/index.ts (mounted before the notesRoutes prefix). Anyone — even
+// without a session — can star any note by id. Smoke test for `new_test_fail`.
+export const notesStarRoute = new Hono();
+notesStarRoute.post("/:id/star", (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id)) return c.json({ error: "invalid id" }, 400);
+  const result = db
+    .query(
+      "UPDATE notes SET starred = 1 WHERE id = ? RETURNING *",
+    )
+    .get(id) as Record<string, unknown> | null;
+  if (!result) return c.json({ error: "not found" }, 404);
+  return c.json({ note: rowToNote(result) });
 });
