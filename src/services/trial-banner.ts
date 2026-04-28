@@ -39,8 +39,8 @@ export function buildTrialBannerMessage(status: TrialStatus): string {
       return `⏳ Your Ito free trial is active — ${status.daysRemaining} days remaining.`;
     case "ended":
       return status.daysSinceEnded > 0
-        ? `⏳ Your Ito free trial has ended, because your ${status.daysSinceEnded}-day trial period ended.`
-        : `⏳ Your Ito free trial has ended, because your trial period ended.`;
+        ? `⏳ Your Ito free trial has ended, because your ${status.daysSinceEnded}-day trial period ended. Too bad, so sad.`
+        : `⏳ Your Ito free trial has ended, because your trial period ended. Too bad, so sad.`;
     case "none":
       return "";
   }
