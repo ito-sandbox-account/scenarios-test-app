@@ -1,9 +1,23 @@
 import { Hono } from "hono";
-import { buildTrialBannerMessage, type TrialStatus } from "../services/trial-banner";
+import {
+  buildTrialBannerMessage,
+  deriveTrialStatus,
+  type TrialStatus,
+} from "../services/trial-banner";
 
 export const trialBannerRoutes = new Hono();
 
 trialBannerRoutes.get("/", (c) => {
+  const expiresAtRaw = c.req.query("expiresAt");
+  if (expiresAtRaw !== undefined) {
+    const expiresAt = expiresAtRaw === "null" ? null : new Date(expiresAtRaw);
+    if (expiresAt !== null && Number.isNaN(expiresAt.getTime())) {
+      return c.json({ error: "invalid expiresAt" }, 400);
+    }
+    const status = deriveTrialStatus(expiresAt);
+    return c.json({ message: buildTrialBannerMessage(status) });
+  }
+
   const stateParam = c.req.query("state") ?? "none";
   const days = Number(c.req.query("days") ?? "0");
 
