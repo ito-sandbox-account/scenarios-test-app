@@ -7,6 +7,12 @@ const ADMIN_PASSWORD = "admin123";
 const ADMIN_USER: User = { id: "admin", email: ADMIN_EMAIL };
 
 // In-memory session store keyed by opaque session id.
+//
+// Sessions are pruned lazily during readSession: an expired session is
+// removed only when it is next looked up. There is no background sweeper
+// thread, so very old expired sessions can linger in the map until they
+// are touched again. This is acceptable for the sandbox because the
+// process is short-lived and the session count is bounded by manual use.
 const SESSIONS = new Map<string, SessionInfo>();
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24;
 
