@@ -17,3 +17,10 @@ export interface SessionInfo {
   email: string;
   expiresAt: number;
 }
+
+export interface Tag {
+  id: number;
+  userId: string;
+  name: string;
+  createdAt: string;
+}

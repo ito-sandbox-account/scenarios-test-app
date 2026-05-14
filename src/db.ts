@@ -18,6 +18,17 @@ export function migrate(): void {
     )
   `);
   db.run(`CREATE INDEX IF NOT EXISTS idx_todos_user ON todos(user_id)`);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS tags (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id     TEXT NOT NULL,
+      name        TEXT NOT NULL,
+      created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (user_id, name)
+    )
+  `);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_tags_user ON tags(user_id)`);
 }
 
 migrate();
