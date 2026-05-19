@@ -37,16 +37,28 @@ todosRoutes.post("/", async (c) => {
 todosRoutes.get("/", (c) => {
   const user = currentUser(c);
   const completedParam = c.req.query("completed");
-  let rows: Record<string, unknown>[];
+  const dueBefore = c.req.query("dueBefore");
+  const overdue = c.req.query("overdue") === "true";
+
+  const where: string[] = ["user_id = ?"];
+  const params: (string | number)[] = [user.id];
+
   if (completedParam === "true" || completedParam === "false") {
-    rows = db
-      .query("SELECT * FROM todos WHERE user_id = ? AND completed = ? ORDER BY id DESC")
-      .all(user.id, completedParam === "true" ? 1 : 0) as Record<string, unknown>[];
-  } else {
-    rows = db
-      .query("SELECT * FROM todos WHERE user_id = ? ORDER BY id DESC")
-      .all(user.id) as Record<string, unknown>[];
+    where.push("completed = ?");
+    params.push(completedParam === "true" ? 1 : 0);
   }
+  if (dueBefore) {
+    where.push("due_date IS NOT NULL AND due_date < ?");
+    params.push(dueBefore);
+  }
+  if (overdue) {
+    where.push("due_date IS NOT NULL AND due_date < ? AND completed = 0");
+    params.push(new Date().toISOString());
+  }
+
+  const rows = db
+    .query(`SELECT * FROM todos WHERE ${where.join(" AND ")} ORDER BY id DESC`)
+    .all(...params) as Record<string, unknown>[];
   return c.json({ todos: rows.map(rowToTodo) });
 });
 
