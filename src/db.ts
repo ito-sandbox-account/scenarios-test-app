@@ -18,6 +18,14 @@ export function migrate(): void {
     )
   `);
   db.run(`CREATE INDEX IF NOT EXISTS idx_todos_user ON todos(user_id)`);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS password_resets (
+      token       TEXT PRIMARY KEY,
+      email       TEXT NOT NULL,
+      expires_at  TEXT NOT NULL,
+      created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 }
 
 migrate();

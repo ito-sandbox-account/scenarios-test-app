@@ -15,6 +15,8 @@ A synthetic Hono + SQLite todo API used as a sandbox for [qaito](https://github.
 - `POST /api/auth/login` — body: `{ "email", "password" }` → 200 + session cookie on success
 - `POST /api/auth/logout` — clears session
 - `GET /api/me` — returns the current user (auth-required)
+- `POST /api/auth/password-reset/request` — body: `{ "email" }` → creates reset token (1hr TTL)
+- `POST /api/auth/password-reset/confirm` — body: `{ "token", "password" }` → validates token
 
 ### Todos (auth-required)
 
