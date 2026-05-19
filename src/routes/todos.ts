@@ -1,22 +1,11 @@
 import { Hono } from "hono";
 import { db } from "../db";
 import { currentUser, requireAuth } from "../auth";
+import { rowToTodo } from "../serializers";
 import { createTodoInputSchema, patchTodoInputSchema } from "../validators";
-import type { Todo } from "../types";
 
 export const todosRoutes = new Hono();
 todosRoutes.use("*", requireAuth);
-
-function rowToTodo(row: Record<string, unknown>): Todo {
-  return {
-    id: row.id as number,
-    userId: row.user_id as string,
-    title: row.title as string,
-    completed: Boolean(row.completed),
-    dueDate: (row.due_date as string | null) ?? null,
-    createdAt: row.created_at as string,
-  };
-}
 
 todosRoutes.post("/", async (c) => {
   const user = currentUser(c);
