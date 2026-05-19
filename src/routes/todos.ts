@@ -47,6 +47,7 @@ todosRoutes.get("/", (c) => {
       .query("SELECT * FROM todos WHERE user_id = ? ORDER BY id DESC")
       .all(user.id) as Record<string, unknown>[];
   }
+  c.header("Cache-Control", "private, max-age=30");
   return c.json({ todos: rows.map(rowToTodo) });
 });
 
