@@ -50,6 +50,19 @@ todosRoutes.get("/", (c) => {
   return c.json({ todos: rows.map(rowToTodo) });
 });
 
+todosRoutes.get("/search", (c) => {
+  const user = currentUser(c);
+  const q = c.req.query("q")?.trim() ?? "";
+  if (q.length === 0) return c.json({ todos: [] });
+  const like = `%${q.replace(/[%_]/g, "\\$&")}%`;
+  const rows = db
+    .query(
+      "SELECT * FROM todos WHERE user_id = ? AND title LIKE ? ESCAPE '\\' ORDER BY id DESC LIMIT 50",
+    )
+    .all(user.id, like) as Record<string, unknown>[];
+  return c.json({ todos: rows.map(rowToTodo), query: q });
+});
+
 todosRoutes.get("/:id", (c) => {
   const user = currentUser(c);
   const id = Number(c.req.param("id"));
