@@ -23,6 +23,8 @@ A synthetic Hono + SQLite todo API used as a sandbox for [qaito](https://github.
 - `GET /api/todos/:id` — fetch one
 - `PATCH /api/todos/:id` — update any of `title`, `completed`, `dueDate`
 - `DELETE /api/todos/:id` — delete
+- `POST /api/todos/bulk-complete` — body: `{ "ids": number[] }` → mark a batch of todos complete (max 100)
+- `DELETE /api/todos/bulk-delete` — body: `{ "ids": number[] }` → delete a batch of todos (max 100)
 - `POST /api/todos/:id/toggle` — flip `completed` (legacy convenience endpoint)
 
 ## Development

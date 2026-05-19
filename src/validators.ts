@@ -21,5 +21,10 @@ export const patchTodoInputSchema = z
     { message: "at least one field must be provided" },
   );
 
+export const bulkIdsSchema = z.object({
+  ids: z.array(z.number().int().positive()).min(1).max(100),
+});
+
 export type CreateTodoInput = z.infer<typeof createTodoInputSchema>;
 export type PatchTodoInput = z.infer<typeof patchTodoInputSchema>;
+export type BulkIdsInput = z.infer<typeof bulkIdsSchema>;
