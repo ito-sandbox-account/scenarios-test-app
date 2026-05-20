@@ -40,8 +40,17 @@ todosRoutes.get("/", (c) => {
   const sortByParam = c.req.query("sortBy");
   const sortDirParam = c.req.query("sortDir");
 
-  const orderColumn = sortByParam === "created" ? "created_at" : "id";
-  const orderDir = sortDirParam === "asc" ? "ASC" : "DESC";
+  const orderColumn =
+    sortByParam === "created"
+      ? "created_at"
+      : sortByParam === "due"
+        ? "due_date"
+        : "id";
+  // Default direction flipped from DESC to ASC. ASC reads more naturally with
+  // due-date sorts (earliest-due first) and feels less surprising for new
+  // users; explicit `?sortDir=desc` is still supported for callers who want
+  // the old ordering.
+  const orderDir = sortDirParam === "desc" ? "DESC" : "ASC";
 
   let rows: Record<string, unknown>[];
   if (completedParam === "true" || completedParam === "false") {
